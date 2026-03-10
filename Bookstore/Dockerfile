@@ -1,17 +1,17 @@
-FROM maven:3.8.6-eclipse-temurin-17 AS build
-WORKDIR /home/app
-# Copiem pom.xml separat pentru a profita de cache-ul Docker
-COPY pom.xml .
-RUN mvn dependency:go-offline
-# Copiem sursele și compilăm
-COPY src ./src
-RUN mvn clean package -DskipTests
+#
+# Mvn Build
+#
+FROM maven:3.8.6-eclipse-temurin-17-focal AS build
+COPY src /home/app/src
+COPY pom.xml /home/app
+RUN mvn -f /home/app/pom.xml clean package
 
-# Etapa 2: Runtime
-FROM eclipse-temurin:17-jre-alpine
-WORKDIR /opt/app
-# Folosim wildcard-ul pentru a găsi JAR-ul indiferent de locația din build
-COPY --from=build /home/app/target/bookstore-*.jar app.jar
+#
+# Jar Package
+#
+FROM eclipse-temurin:17-jre-focal
+COPY --from=build /home/app/target/bookstore-0.0.1-SNAPSHOT.jar /usr/local/lib/bookstore.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/usr/local/lib/bookstore.jar"]
+
 
